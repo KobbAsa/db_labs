@@ -258,5 +258,157 @@ SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
 ```
 
-## RESTfull сервіс для управління даними
+# RESTfull сервіс для управління даними
+## Головний файл app.js
+``` js
+const express = require('express');
+const bodyParser = require('body-parser');
+const pollRoutes = require('./api/pollRoutes');
 
+const app = express();
+
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+app.use('/api/polls', pollRoutes);
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
+
+module.exports = app;
+```
+
+## Файл з'єднання з базою даних db.js
+``` js
+const Sequelize = require('sequelize');
+
+const sequelize = new Sequelize('opinio', 'root', 'Anton2005', {
+    host: 'localhost',
+    dialect: 'mysql'
+});
+
+module.exports = sequelize;
+```
+
+## Файл моделі poll.js
+
+``` js 
+const Sequelize = require('sequelize');
+const sequelize = require('../db');
+
+const Poll = sequelize.define('Poll', {
+    id: {
+        type: Sequelize.INTEGER,
+        primaryKey: true,
+        allowNull: false
+    },
+    title: {
+        type: Sequelize.STRING,
+        allowNull: false
+    },
+    description: {
+        type: Sequelize.STRING,
+        allowNull: false
+    }
+}, {
+    tableName: 'Poll',
+    timestamps: false
+});
+
+module.exports = Poll;
+```
+
+# Файл контролера pollControllers.js
+``` js
+const Poll = require('../models/pollModel');
+
+const pollController = {
+    createPoll: async (req, res) => {
+        try {
+            const { id, title, description } = req.body;
+            const newPoll = await Poll.create({ id, title, description });
+            res.status(201).json(newPoll);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    },
+
+    getAllPolls: async (req, res) => {
+        try {
+            const polls = await Poll.findAll();
+            res.status(200).json(polls);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    },
+
+    getPollById: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const poll = await Poll.findByPk(id);
+            if (poll) {
+                res.status(200).json(poll);
+            } else {
+                res.status(404).json({ error: 'Poll not found' });
+            }
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    },
+
+    updatePoll: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { title, description } = req.body;
+            const updated = await Poll.update({ title, description }, { where: { id } });
+            if (updated) {
+                const updatedPoll = await Poll.findByPk(id);
+                res.status(200).json(updatedPoll);
+            } else {
+                res.status(404).json({ error: 'Poll not found' });
+            }
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    },
+
+    deletePoll: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const deleted = await Poll.destroy({ where: { id } });
+            if (deleted) {
+                res.status(200).json({ message: 'Poll deleted' });
+            } else {
+                res.status(404).json({ error: 'Poll not found' });
+            }
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+};
+
+module.exports = pollController;
+```
+
+# Файл налаштування маршрутів pollRoutes.js
+
+``` js
+const express = require('express');
+const router = express.Router();
+const pollController = require('../controllers/pollControllers');
+
+router.get('/', pollController.getAllPolls);
+
+router.get('/:id', pollController.getPollById);
+
+router.post('/', pollController.createPoll);
+
+router.put('/:id', pollController.updatePoll);
+
+router.delete('/:id', pollController.deletePoll);
+
+module.exports = router;
+
+```
