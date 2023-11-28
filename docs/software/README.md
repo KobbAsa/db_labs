@@ -293,7 +293,6 @@ module.exports = sequelize;
 ```
 
 ## Файл моделі poll.js
-
 ``` js 
 const Sequelize = require('sequelize');
 const sequelize = require('../db');
@@ -320,7 +319,7 @@ const Poll = sequelize.define('Poll', {
 module.exports = Poll;
 ```
 
-# Файл контролера pollControllers.js
+## Файл контролера pollControllers.js
 ``` js
 const Poll = require('../models/pollModel');
 
@@ -392,8 +391,7 @@ const pollController = {
 module.exports = pollController;
 ```
 
-# Файл налаштування маршрутів pollRoutes.js
-
+## Файл налаштування маршрутів pollRoutes.js
 ``` js
 const express = require('express');
 const router = express.Router();
